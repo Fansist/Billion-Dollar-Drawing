@@ -1,26 +1,34 @@
-# Render Blueprint for The Billion Dollar Drawing
+# Render Blueprint — The Billion Dollar Drawing (live shared canvas)
 # Docs: https://render.com/docs/blueprint-spec
 #
 # Deploy: in the Render dashboard choose "New +" -> "Blueprint", connect this
-# repo, and Render reads this file. It hosts the site as a Static Site (free,
-# global CDN, no cold starts) since the app is 100% client-side.
+# repo, and Render reads this file. It runs the bundled Node server (server.js),
+# which serves the site AND the /api shared-canvas backend, so every visitor
+# paints the SAME drawing.
 #
-# Prefer a Web Service instead? This repo also ships server.js + package.json,
-# so you can create a Node Web Service with build "npm install" and start
-# "npm start" (see README).
+# Free plan caveats: the instance cold-starts after idle, and the shared-canvas
+# data file is ephemeral (it resets when the instance is recreated, e.g. on
+# redeploy). For a DURABLE shared canvas, attach the persistent disk below
+# (requires a paid instance type) and set DATA_DIR to its mount path.
+#
+# Prefer a free, solo (per-browser) canvas with no cold starts and no backend?
+# Set `runtime: static`, add `staticPublishPath: .`, and drop the build/start
+# commands — the front end falls back to localStorage automatically.
 
 services:
   - type: web
     name: billion-dollar-drawing
-    runtime: static
-    # No build step — the files are served exactly as they are.
-    buildCommand: "echo 'No build needed — serving static files as-is.'"
-    staticPublishPath: .
-    pullRequestPreviewsEnabled: true
-    headers:
-      - path: /*
-        name: X-Content-Type-Options
-        value: nosniff
-      - path: /*
-        name: Referrer-Policy
-        value: strict-origin-when-cross-origin
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      # Durable shared canvas (needs the disk below + a paid instance):
+      # - key: DATA_DIR
+      #   value: /data
+    # disk:
+    #   name: canvas-data
+    #   mountPath: /data
+    #   sizeGB: 1
