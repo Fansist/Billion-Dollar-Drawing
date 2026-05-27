@@ -47,26 +47,49 @@ open index.html            # macOS  (or: xdg-open index.html on Linux)
 python3 -m http.server 8000   # -> http://localhost:8000
 ```
 
+## Two ways it runs (auto-detected)
+
+The front end probes for a backend on load and picks a mode automatically:
+
+- **Solo canvas** — no backend found. Each visitor sees the seeded mosaic plus *their own*
+  claims, saved in their browser via `localStorage`. This is what a **Static Site** deploy gives.
+- **Live shared canvas** — a backend is present (the bundled `server.js`), so everyone paints
+  the **same** canvas. Claims are validated and stored server-side; the page polls for others'
+  pixels every 15s. This is what a **Web Service** deploy gives.
+
+A small pill above the canvas tells you which mode you're in.
+
 ## Deploy to Render
 
-The app is 100% client-side, so it deploys cleanly on [Render](https://render.com).
-Two supported paths:
+The app deploys cleanly on [Render](https://render.com). Pick based on whether you want a
+shared canvas:
 
-**Option A — Static Site (recommended: free, global CDN, no cold starts).**
+**Option A — Static Site (solo canvas; free, global CDN, no cold starts).**
 This repo includes a `render.yaml` blueprint.
 - Dashboard: **New + → Blueprint**, connect this repo, and Render reads `render.yaml`.
 - Or manually: **New + → Static Site**, leave **Build Command** blank, set **Publish
   Directory** to `.`.
 
-**Option B — Web Service (Node).** Uses the bundled `server.js`.
+**Option B — Web Service (live shared canvas).** Uses the bundled `server.js`.
 - **New + → Web Service**, connect this repo.
 - **Build Command:** `npm install` &nbsp;·&nbsp; **Start Command:** `npm start`.
-- Render injects `PORT`; `server.js` already binds to `process.env.PORT` on `0.0.0.0`.
+- Render injects `PORT`; `server.js` binds to `process.env.PORT` on `0.0.0.0`.
+- **Durability:** by default the shared canvas is a JSON file next to the app, which resets
+  when the instance is recreated (e.g. on redeploy). For persistence across deploys, attach a
+  Render **persistent disk** and set the env var `DATA_DIR` to its mount path (e.g. `/data`).
 
-**Note on state:** purchases are saved in each visitor's browser via `localStorage`, so
-everyone sees the seeded canvas plus *their own* claims — it is not yet a shared, live canvas.
-Making it shared would need a small backend (a Render Web Service + Postgres or a persistent
-disk) — easy to add if you want it.
+## Shared-canvas API
+
+When `server.js` is running:
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/api/regions` | The whole shared canvas: `{ "regions": [...] }` |
+| `POST` | `/api/regions` | Claim a block. `201 { region }` on success, `409` if it overlaps an existing claim, `400` on invalid input. |
+
+Server-side validation clamps coordinates to the 10,000×10,000 grid, caps a single claim at
+1,000,000 pixels, requires hex colors, strips non-`http(s)` links, and rejects overlaps — so a
+claim is authoritative and can't be double-sold.
 
 ## Files
 
@@ -74,8 +97,8 @@ disk) — easy to add if you want it.
 |---|---|
 | `index.html` | Page structure and content |
 | `styles.css` | Dark + gold theme, fully responsive |
-| `app.js` | Canvas engine: storage, rendering, zoom/pan, selection, paint, purchases, stats |
-| `server.js` | Zero-dependency static server (Render Web Service entrypoint + local dev) |
+| `app.js` | Canvas engine: rendering, zoom/pan, selection, paint, purchases, stats; shared/solo modes |
+| `server.js` | Zero-dependency static server **+ shared-canvas API** (Render Web Service entrypoint + local dev) |
 | `render.yaml` | Render Blueprint (deploys as a Static Site) |
 | `package.json` | `npm start` script + Node engine |
 | `VIDEO_SCRIPT.md` | The funny, branching, **interactive** AI video ad script (shot-by-shot, with copy-paste generation prompts) |

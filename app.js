@@ -81,6 +81,7 @@ function seedRegions() {
 
 /* ---------- state ---------- */
 let regions = [];
+let shared = false;          // true when a backend /api is available
 function load() {
   try {
     const raw = localStorage.getItem(STORE_KEY);
@@ -417,7 +418,8 @@ buyForm.addEventListener("submit", (e) => {
   showModal("confirmModal");
 });
 
-function commitPurchase() {
+async function commitPurchase() {
+  if (!sel || overlapWarn) return;
   const owner = ($("ownerName").value.trim() || "Anonymous Pixel Baron").slice(0, 40);
   const message = $("ownerMsg").value.trim().slice(0, 80);
   const url = safeUrl($("ownerUrl").value.trim());
@@ -428,16 +430,69 @@ function commitPurchase() {
     art: art ? art.slice() : null,
     owner, message, url, ts: Date.now(),
   };
-  regions.push(region);
-  save();
+  if (shared) {
+    const ok = $("confirmOk");
+    ok.disabled = true; ok.textContent = "Claiming…";
+    await postRegion(region);
+    ok.disabled = false; ok.textContent = "Yes, take my penny";
+  } else {
+    regions.push(region);
+    save();
+    finalizePurchase(region);
+  }
+}
+
+function finalizePurchase(region) {
   const px = region.w * region.h;
   burstConfetti(view.ox + (region.x + region.w / 2) * view.scale,
                 view.oy + (region.y + region.h / 2) * view.scale);
-  addToast(`🎉 ${owner} claimed ${fmtInt(px)} pixel${px === 1 ? "" : "s"} for ${fmtMoney(px * PRICE)}!`);
+  addToast(`🎉 ${region.owner} claimed ${fmtInt(px)} pixel${px === 1 ? "" : "s"} for ${fmtMoney(px * PRICE)}!`);
   $("ownerName").value = ""; $("ownerMsg").value = ""; $("ownerUrl").value = "";
   hideModal("confirmModal");
   closeForm();
   refreshAll();
+}
+
+async function postRegion(region) {
+  try {
+    const res = await fetch("/api/regions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        x: region.x, y: region.y, w: region.w, h: region.h,
+        fill: region.fill, art: region.art,
+        owner: region.owner, message: region.message, url: region.url,
+      }),
+    });
+    if (res.status === 201) {
+      const data = await res.json();
+      regions.push(data.region);
+      finalizePurchase(data.region);
+      return;
+    }
+    if (res.status === 409) {
+      addToast("😬 Someone grabbed those pixels first. Refreshing the canvas…");
+      await refreshFromServer();
+      refreshForm();
+      hideModal("confirmModal");
+      return;
+    }
+    const err = await res.json().catch(() => ({}));
+    addToast("⚠ Couldn't claim those pixels: " + (err.error || res.status));
+    hideModal("confirmModal");
+  } catch {
+    addToast("⚠ Couldn't reach the server. Check your connection and try again.");
+    hideModal("confirmModal");
+  }
+}
+
+async function refreshFromServer() {
+  try {
+    const res = await fetch("/api/regions", { cache: "no-store" });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data && Array.isArray(data.regions)) { regions = data.regions; refreshAll(); }
+  } catch { /* keep what we have */ }
 }
 
 /* ============================================================
@@ -785,8 +840,9 @@ function addToast(msg) {
   setTimeout(() => t.remove(), 3600);
 }
 
-/* reset */
+/* reset (solo only — never nukes the shared canvas) */
 $("resetAll").addEventListener("click", () => {
+  if (shared) { addToast("This is a live shared canvas — it can't be reset from here."); return; }
   if (!confirm("Wipe every pixel from this browser and reload the original mosaic? Your local masterpiece will be gone.")) return;
   try { localStorage.removeItem(STORE_KEY); } catch {}
   regions = seedRegions(); save();
@@ -794,16 +850,67 @@ $("resetAll").addEventListener("click", () => {
   addToast("🧨 Canvas reset. A clean slate of crushing potential.");
 });
 
+/* ---------- shared-canvas mode ---------- */
+function setModePill() {
+  const el = $("canvasMode");
+  if (el) {
+    el.textContent = shared ? "● Live shared canvas" : "● Solo canvas (saved in your browser)";
+    el.className = "mode-pill " + (shared ? "live" : "solo");
+    el.title = shared
+      ? "A backend is connected — everyone paints this same canvas."
+      : "No backend detected — your pixels are saved locally in this browser.";
+  }
+  const rb = $("resetAll");
+  if (rb) {
+    rb.disabled = shared;
+    rb.style.opacity = shared ? .5 : 1;
+    rb.style.cursor = shared ? "not-allowed" : "pointer";
+    rb.title = shared ? "The shared canvas can't be reset from here." : "Wipe everything stored in your browser";
+  }
+}
+
+let pollTimer = 0;
+function startPolling() {
+  if (pollTimer) return;
+  pollTimer = setInterval(async () => {
+    if (document.hidden) return;
+    try {
+      const res = await fetch("/api/regions", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data || !Array.isArray(data.regions)) return;
+      const a = data.regions, b = regions;
+      const changed = a.length !== b.length ||
+        (a.length && b.length && a[a.length - 1].id !== b[b.length - 1].id);
+      if (changed) { regions = a; refreshAll(); }
+    } catch { /* transient */ }
+  }, 15000);
+}
+
+async function initData() {
+  try {
+    const res = await fetch("/api/regions", { cache: "no-store" });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && Array.isArray(data.regions)) {
+        regions = data.regions; shared = true;
+        setModePill(); startPolling(); refreshAll();
+        return;
+      }
+    }
+  } catch { /* no backend -> solo mode */ }
+  shared = false; load(); setModePill(); refreshAll();
+}
+
 /* ============================================================
    Boot
    ============================================================ */
-load();
 setMode("select");
 new ResizeObserver(resizeCanvas).observe(wrap);
 resizeCanvas();
-refreshAll();
 window.addEventListener("keydown", (e) => {
   if (e.key === "Escape") { hideModal("confirmModal"); hideModal("adModal"); }
 });
+initData();   // fetch shared canvas if a backend exists, else solo (localStorage)
 
 })();
