@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>The Billion Dollar Drawing — Own a Pixel of Internet History (For a Penny)</title>
+<meta name="description" content="100,000,000 pixels. One cent each. A billion-dollar name and a million-dollar ceiling. Buy a pixel, paint it, leave your mark on the internet's most financially confused canvas." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="stylesheet" href="styles.css" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎨</text></svg>" />
+</head>
+<body>
+
+<!-- ===================== NAV ===================== -->
+<header class="nav" id="nav">
+  <a class="brand" href="#top">
+    <span class="brand-mark">🎨</span>
+    <span class="brand-text">The <b>Billion</b> Dollar Drawing<sup class="brand-aster">*</sup></span>
+  </a>
+  <nav class="nav-links">
+    <a href="#studio">The Canvas</a>
+    <a href="#how">How It Works</a>
+    <a href="#leaderboard">Wall of Fame</a>
+    <a href="#faq">FAQ</a>
+  </nav>
+  <div class="nav-actions">
+    <button class="btn btn-ghost" id="navWatchAd">▶ Watch the Ad</button>
+    <a class="btn btn-gold" href="#studio">Claim a Pixel</a>
+  </div>
+</header>
+
+<!-- ===================== HERO ===================== -->
+<main id="top">
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-inner">
+    <div class="hero-badge">As seen by literally dozens of people</div>
+    <h1 class="hero-title">
+      Own a pixel of internet history.<br />
+      <span class="grad">For one cent.</span>
+    </h1>
+    <p class="hero-sub">
+      <b>100,000,000 pixels.</b> A penny each. We named it the <i>Billion</i> Dollar
+      Drawing, then did the math, and it was too late to change the logo.
+      Paint your pixel, link your thing, and become a rounding error in
+      a glorious shared masterpiece.
+    </p>
+
+    <div class="stats" id="heroStats">
+      <div class="stat">
+        <div class="stat-num" id="statRaised">$0</div>
+        <div class="stat-label">Raised so far</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" id="statPixels">0</div>
+        <div class="stat-label">Pixels claimed / 100,000,000</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" id="statBillion">0%</div>
+        <div class="stat-label">of the way to an <i>actual</i> billion</div>
+      </div>
+    </div>
+
+    <div class="billion-bar-wrap" title="The bar to a real billion dollars. Squint and you might see progress.">
+      <div class="billion-bar"><span id="billionFill" class="billion-fill"></span></div>
+      <div class="billion-bar-caption">
+        <span>$0</span>
+        <span id="billionMid">Goal: $1,000,000,000 (we believe in ourselves)</span>
+        <span>$1B</span>
+      </div>
+    </div>
+
+    <div class="hero-cta">
+      <a class="btn btn-gold btn-lg" href="#studio">🎨 Claim Your Pixels</a>
+      <button class="btn btn-ghost btn-lg" id="heroWatchAd">▶ Watch the (Funny) Ad</button>
+    </div>
+    <p class="hero-fineprint">
+      *No real money changes hands. This is a playable parody. Your pixels live in
+      your browser and your heart. <a href="#faq">The legally required honesty →</a>
+    </p>
+  </div>
+</section>
+
+<!-- ===================== TICKER ===================== -->
+<div class="ticker" aria-hidden="true">
+  <div class="ticker-track" id="tickerTrack"></div>
+</div>
+
+<!-- ===================== STUDIO ===================== -->
+<section class="studio" id="studio">
+  <div class="section-head">
+    <h2>The Canvas</h2>
+    <p>Scroll to zoom, drag to pan. Switch to <b>Select</b> mode, drag a rectangle,
+       and paint your slice of the mosaic. Hover any claimed block to meet its owner.</p>
+  </div>
+
+  <div class="studio-grid">
+    <!-- Canvas + tools -->
+    <div class="canvas-col">
+      <div class="toolbar">
+        <div class="tool-group" role="group" aria-label="Mode">
+          <button class="tool active" id="modeSelect" data-mode="select" title="Select & buy pixels">▭ Select</button>
+          <button class="tool" id="modePan" data-mode="pan" title="Pan the canvas">✋ Pan</button>
+        </div>
+        <div class="tool-group">
+          <button class="tool" id="zoomOut" title="Zoom out">−</button>
+          <button class="tool" id="zoomIn" title="Zoom in">+</button>
+          <button class="tool" id="zoomReset" title="Fit whole canvas">⤢ Fit</button>
+        </div>
+        <div class="tool-group">
+          <button class="tool" id="teleport" title="Teleport to a random claimed pixel">🎲 Teleport</button>
+        </div>
+        <div class="tool-zoom-readout" id="zoomReadout">Zoom: 1×</div>
+      </div>
+
+      <div class="canvas-wrap" id="canvasWrap">
+        <canvas id="canvas"></canvas>
+        <canvas id="confetti" class="confetti-layer"></canvas>
+        <div class="coord-readout" id="coordReadout">—</div>
+        <div class="hover-card" id="hoverCard" hidden>
+          <div class="hover-owner" id="hoverOwner"></div>
+          <div class="hover-msg" id="hoverMsg"></div>
+          <div class="hover-meta" id="hoverMeta"></div>
+          <a class="hover-link" id="hoverLink" target="_blank" rel="noopener noreferrer" hidden>Visit →</a>
+        </div>
+        <div class="minimap" id="minimapWrap" title="Minimap — click to jump">
+          <canvas id="minimap"></canvas>
+          <div class="minimap-view" id="minimapView"></div>
+        </div>
+      </div>
+      <p class="canvas-hint">
+        Tip: each pixel costs <b>$0.01</b>. A 100×100 block is 10,000 pixels = <b>$100</b>.
+        The whole canvas is $1,000,000, which is 0.1% of our stated goal. We remain optimistic.
+      </p>
+    </div>
+
+    <!-- Buy panel -->
+    <aside class="buy-panel" id="buyPanel">
+      <div class="buy-empty" id="buyEmpty">
+        <div class="buy-empty-icon">🖱️</div>
+        <h3>Pick your pixels</h3>
+        <p>In <b>Select</b> mode, drag a rectangle on the canvas — or type exact
+           coordinates below. Then paint, name it, and plant your flag.</p>
+        <button class="btn btn-ghost btn-block" id="luckyBtn">🍀 I'm feeling rich — pick a spot for me</button>
+      </div>
+
+      <form class="buy-form" id="buyForm" hidden>
+        <h3>Claim these pixels</h3>
+
+        <div class="coord-grid">
+          <label>X <input type="number" id="selX" min="0" /></label>
+          <label>Y <input type="number" id="selY" min="0" /></label>
+          <label>W <input type="number" id="selW" min="1" /></label>
+          <label>H <input type="number" id="selH" min="1" /></label>
+        </div>
+
+        <div class="price-row">
+          <div>
+            <div class="price-pixels" id="pricePixels">0 pixels</div>
+            <div class="price-sub">at one cent each</div>
+          </div>
+          <div class="price-total" id="priceTotal">$0.00</div>
+        </div>
+
+        <div class="paint-block" id="paintBlock">
+          <div class="paint-head">
+            <span>Paint it</span>
+            <div class="swatches" id="swatches"></div>
+          </div>
+          <div class="paint-tools">
+            <input type="color" id="colorPicker" value="#f5c518" title="Custom color" />
+            <button type="button" class="mini-btn" id="fillAll">Fill all</button>
+            <button type="button" class="mini-btn" id="eraseTool">Eraser</button>
+            <button type="button" class="mini-btn" id="clearArt">Clear</button>
+          </div>
+          <div class="mini-canvas-wrap">
+            <canvas id="miniCanvas"></canvas>
+          </div>
+          <p class="paint-note" id="paintNote"></p>
+        </div>
+
+        <label class="field">Display name / brand
+          <input type="text" id="ownerName" maxlength="40" placeholder="e.g. Dave's Slightly Haunted Antiques" />
+        </label>
+        <label class="field">Message on hover
+          <input type="text" id="ownerMsg" maxlength="80" placeholder="e.g. Tell them Dave sent you" />
+        </label>
+        <label class="field">Link (optional)
+          <input type="url" id="ownerUrl" placeholder="https://your-empire.example" />
+        </label>
+
+        <button type="submit" class="btn btn-gold btn-block btn-buy" id="buyBtn">
+          Claim for <span id="buyBtnPrice">$0.00</span>
+        </button>
+        <button type="button" class="btn btn-ghost btn-block" id="cancelBuy">Cancel</button>
+      </form>
+    </aside>
+  </div>
+</section>
+
+<!-- ===================== HOW IT WORKS ===================== -->
+<section class="how" id="how">
+  <div class="section-head">
+    <h2>How it works</h2>
+    <p>Four steps to financial irrelevance.</p>
+  </div>
+  <div class="steps">
+    <div class="step"><div class="step-n">1</div><h3>Find your pixels</h3><p>Zoom into the 100-million-pixel void. Drag a rectangle around the patch you'd like to immortalize.</p></div>
+    <div class="step"><div class="step-n">2</div><h3>Paint it</h3><p>Solid color or hand-drawn pixel art. Express yourself in a space smaller than this sentence's period.</p></div>
+    <div class="step"><div class="step-n">3</div><h3>Name & link it</h3><p>Add a brand, a hover message, and a link. Hovering visitors will see your masterpiece and possibly judge it.</p></div>
+    <div class="step"><div class="step-n">4</div><h3>Claim it for pennies</h3><p>Pay one glorious cent per pixel. Watch the "% of a billion" counter refuse to move.</p></div>
+  </div>
+</section>
+
+<!-- ===================== LEADERBOARD ===================== -->
+<section class="leaderboard" id="leaderboard">
+  <div class="section-head">
+    <h2>Wall of Fame</h2>
+    <p>The most generous rounding errors on the internet.</p>
+  </div>
+  <div class="board-grid">
+    <div class="board">
+      <h3>🏆 Biggest spenders</h3>
+      <ol class="board-list" id="topList"></ol>
+    </div>
+    <div class="board">
+      <h3>🕒 Just claimed</h3>
+      <ul class="recent-list" id="recentList"></ul>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FAQ ===================== -->
+<section class="faq" id="faq">
+  <div class="section-head">
+    <h2>Questions you're too polite to ask</h2>
+  </div>
+  <div class="faq-list">
+    <details><summary>Why is it called the <i>Billion</i> Dollar Drawing if it maxes out at one million?</summary>
+      <p>Branding. If we sell every single pixel, we raise $1,000,000 — which is exactly 0.1% of a billion. We considered renaming it the "0.1% of a Billion Dollar Drawing," but it didn't fit on the hat.</p></details>
+    <details><summary>Is this a real investment?</summary>
+      <p>No. It is a parody. The only thing appreciating here is the joke. Please do not remortgage anything.</p></details>
+    <details><summary>Do I actually pay money?</summary>
+      <p>No real payment is taken. Your masterpiece is saved in your own browser using localStorage, which is the digital equivalent of writing your name on a napkin and keeping it.</p></details>
+    <details><summary>What if I buy a single pixel?</summary>
+      <p>Then for one cent you own a square so small that on most screens it is a rumor. Bold. We respect it.</p></details>
+    <details><summary>Can I draw something inappropriate?</summary>
+      <p>It's your browser, your napkin. But the imaginary moderators of this imaginary economy are watching with imaginary disappointment.</p></details>
+    <details><summary>Will this make me famous?</summary>
+      <p>Among people who zoom into a 10,000×10,000 grid looking for your specific 4 pixels? Absolutely. All three of them.</p></details>
+  </div>
+</section>
+
+<!-- ===================== FOOTER ===================== -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-brand">🎨 The <b>Billion</b> Dollar Drawing</div>
+    <p class="footer-disclaimer">
+      A loving parody of the Million Dollar Homepage and The Million Dollar Drawing.
+      Not affiliated, not endorsed, not solvent. No billions were raised, harmed, or
+      meaningfully approached in the making of this site. Pixels are stored locally
+      in your browser. Past performance of imaginary pixels does not guarantee future imaginary results.
+    </p>
+    <div class="footer-actions">
+      <button class="btn btn-ghost" id="footerWatchAd">▶ Watch the Ad</button>
+      <button class="btn btn-ghost btn-danger" id="resetAll" title="Wipe everything stored in your browser">🧨 Reset my canvas</button>
+    </div>
+  </div>
+</footer>
+</main>
+
+<!-- ===================== CONFIRM MODAL ===================== -->
+<div class="modal-backdrop" id="confirmModal" hidden>
+  <div class="modal">
+    <h3 id="confirmTitle">Confirm your historic micro-investment</h3>
+    <p id="confirmBody"></p>
+    <div class="modal-receipt" id="confirmReceipt"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="confirmCancel">On second thought…</button>
+      <button class="btn btn-gold" id="confirmOk">Yes, take my penny</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== AD MODAL ===================== -->
+<div class="modal-backdrop" id="adModal" hidden>
+  <div class="modal modal-wide">
+    <button class="modal-x" id="adClose" aria-label="Close">✕</button>
+    <h3>🎬 The Ad</h3>
+    <div class="ad-player" id="adPlayer">
+      <div class="ad-screen" id="adScreen">
+        <button class="ad-play" id="adPlay" aria-label="Play">▶</button>
+        <div class="ad-caption" id="adCaption">A 60-second interactive ad about spending one cent very dramatically.</div>
+      </div>
+    </div>
+    <p class="ad-note">
+      This is a teaser. The full shot-by-shot, AI-ready, branching interactive script
+      lives in <code>VIDEO_SCRIPT.md</code> in the repo — built for tools like Runway,
+      Sora, Pika, or a very patient intern.
+    </p>
+  </div>
+</div>
+
+<!-- ===================== TOASTS ===================== -->
+<div class="toast-wrap" id="toastWrap" aria-live="polite"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
