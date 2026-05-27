@@ -1,0 +1,12 @@
+{
+  "name": "billion-dollar-drawing",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A playable parody: 100,000,000 pixels at one cent each on a site bravely named the Billion Dollar Drawing.",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

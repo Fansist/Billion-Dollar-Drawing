@@ -37,13 +37,36 @@ No real money changes hands. Purchases are simulated and saved to your browser's
 It's static. Any of these work:
 
 ```bash
-# Option 1: just open the file
+# Option 1: the bundled Node server (zero dependencies)
+npm start                  # -> http://localhost:3000
+
+# Option 2: just open the file
 open index.html            # macOS  (or: xdg-open index.html on Linux)
 
-# Option 2: serve it (recommended — avoids any file:// quirks)
-python3 -m http.server 8000
-# then visit http://localhost:8000
+# Option 3: any static server
+python3 -m http.server 8000   # -> http://localhost:8000
 ```
+
+## Deploy to Render
+
+The app is 100% client-side, so it deploys cleanly on [Render](https://render.com).
+Two supported paths:
+
+**Option A — Static Site (recommended: free, global CDN, no cold starts).**
+This repo includes a `render.yaml` blueprint.
+- Dashboard: **New + → Blueprint**, connect this repo, and Render reads `render.yaml`.
+- Or manually: **New + → Static Site**, leave **Build Command** blank, set **Publish
+  Directory** to `.`.
+
+**Option B — Web Service (Node).** Uses the bundled `server.js`.
+- **New + → Web Service**, connect this repo.
+- **Build Command:** `npm install` &nbsp;·&nbsp; **Start Command:** `npm start`.
+- Render injects `PORT`; `server.js` already binds to `process.env.PORT` on `0.0.0.0`.
+
+**Note on state:** purchases are saved in each visitor's browser via `localStorage`, so
+everyone sees the seeded canvas plus *their own* claims — it is not yet a shared, live canvas.
+Making it shared would need a small backend (a Render Web Service + Postgres or a persistent
+disk) — easy to add if you want it.
 
 ## Files
 
@@ -52,6 +75,9 @@ python3 -m http.server 8000
 | `index.html` | Page structure and content |
 | `styles.css` | Dark + gold theme, fully responsive |
 | `app.js` | Canvas engine: storage, rendering, zoom/pan, selection, paint, purchases, stats |
+| `server.js` | Zero-dependency static server (Render Web Service entrypoint + local dev) |
+| `render.yaml` | Render Blueprint (deploys as a Static Site) |
+| `package.json` | `npm start` script + Node engine |
 | `VIDEO_SCRIPT.md` | The funny, branching, **interactive** AI video ad script (shot-by-shot, with copy-paste generation prompts) |
 
 ## The advertisement

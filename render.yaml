@@ -1,0 +1,26 @@
+# Render Blueprint for The Billion Dollar Drawing
+# Docs: https://render.com/docs/blueprint-spec
+#
+# Deploy: in the Render dashboard choose "New +" -> "Blueprint", connect this
+# repo, and Render reads this file. It hosts the site as a Static Site (free,
+# global CDN, no cold starts) since the app is 100% client-side.
+#
+# Prefer a Web Service instead? This repo also ships server.js + package.json,
+# so you can create a Node Web Service with build "npm install" and start
+# "npm start" (see README).
+
+services:
+  - type: web
+    name: billion-dollar-drawing
+    runtime: static
+    # No build step — the files are served exactly as they are.
+    buildCommand: "echo 'No build needed — serving static files as-is.'"
+    staticPublishPath: .
+    pullRequestPreviewsEnabled: true
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
